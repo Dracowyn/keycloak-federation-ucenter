@@ -1,0 +1,5 @@
+cn\isekai\keycloak\federation\ucenter\UCenterFederationProviderFactory.class
+cn\isekai\keycloak\federation\ucenter\model\UserData.class
+cn\isekai\keycloak\federation\ucenter\UCenterUtils.class
+cn\isekai\keycloak\federation\ucenter\UCenterConfig.class
+cn\isekai\keycloak\federation\ucenter\UCenterFederationProvider.class
