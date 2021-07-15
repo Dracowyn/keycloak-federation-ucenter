@@ -48,6 +48,11 @@ public class UCenterFederationProviderFactory implements UserStorageProviderFact
                 .defaultValue("uc_")
                 .type(ProviderConfigProperty.STRING_TYPE)
                 .add()
+                .property().name("full-sync")
+                .label("Sync Users to UCenter")
+                .defaultValue("false")
+                .type(ProviderConfigProperty.BOOLEAN_TYPE)
+                .add()
                 .build();
     }
 

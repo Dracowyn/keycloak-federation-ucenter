@@ -12,6 +12,7 @@ import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.utils.UserModelDelegate;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
 
@@ -23,6 +24,9 @@ public class UserData extends AbstractUserAdapterFederatedStorage  implements Us
                     ComponentModel storageProviderModel) {
         super(session, realm, storageProviderModel);
         model = storageProviderModel;
+
+        this.setEnabled(true);
+        this.setEmailVerified(true);
     }
 
     protected String userId, email, userName, passwordHash, salt;
@@ -53,6 +57,11 @@ public class UserData extends AbstractUserAdapterFederatedStorage  implements Us
     @Override
     public String getFirstName() {
         return this.userName;
+    }
+
+    @Override
+    public String getLastName() {
+        return "";
     }
 
     @Override
@@ -112,10 +121,9 @@ public class UserData extends AbstractUserAdapterFederatedStorage  implements Us
             localUser.setFirstName(this.getUsername());
             localUser.setEnabled(true);
             localUser.setEmailVerified(true);
+            localUser.setSingleAttribute("ucenter-uid", this.getUserId());
             return localUser;
-        } else {
-            //已有用户，则不进行创建
-            return null;
         }
+        return localUser;
     }
 }
