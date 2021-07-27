@@ -14,14 +14,9 @@ import org.keycloak.models.credential.PasswordCredentialModel;
 import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.user.UserLookupProvider;
 
-import javax.naming.InitialContext;
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.sql.*;
+import java.util.*;
+import java.util.stream.Stream;
 
 public class UCenterFederationProvider implements UserStorageProvider,
         UserLookupProvider,
@@ -34,12 +29,26 @@ public class UCenterFederationProvider implements UserStorageProvider,
     protected UCenterConfig config;
     protected UCenterFederationProviderFactory factory;
 
+    protected Connection dbConnection;
+
     public UCenterFederationProvider(KeycloakSession session, ComponentModel model,
                                      UCenterFederationProviderFactory factory) {
         this.session = session;
         this.model = model;
         this.config = new UCenterConfig(model);
         this.factory = factory;
+
+        this.dbConnection = getConnection();
+    }
+
+    private Connection getConnection(){
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            return DriverManager.getConnection(config.getJdbcUrl(), config.getDbUser(), config.getDbPass());
+        } catch (Exception e){
+            logger.error("Cannot connect to UCenter database", e);
+        }
+        return null;
     }
 
     public UserData getUser(String findBy, String condition, RealmModel realm){
@@ -51,17 +60,14 @@ public class UCenterFederationProvider implements UserStorageProvider,
     }
 
     public UserData getUser(String findBy, Object condition, Class conditionType, RealmModel realm){
-        Connection dbw = null;
+        //Connection connection = getConnection();
         PreparedStatement stmt = null;
         UserData userData = null;
         String table;
 
         try	{
-            InitialContext ctx = new InitialContext();
-            DataSource ds = (DataSource) ctx.lookup(config.getDataSourceName());
             table = config.getTable("members");
-            dbw = ds.getConnection();
-            stmt = dbw.prepareStatement("select * from `" + table + "` where `" + findBy + "`=?");
+            stmt = dbConnection.prepareStatement("select * from `" + table + "` where `" + findBy + "`=?");
 
             if(conditionType.equals(String.class)){
                 stmt.setString(1, (String) condition);
@@ -86,9 +92,9 @@ public class UCenterFederationProvider implements UserStorageProvider,
                 if(stmt != null) {
                     stmt.close();
                 }
-                if(dbw != null) {
-                    dbw.close();
-                }
+                /*if(connection != null){
+                    connection.close();
+                }*/
             } catch(Exception ignored) {
 
             }
@@ -123,8 +129,9 @@ public class UCenterFederationProvider implements UserStorageProvider,
 
     @Override
     public boolean isValid(RealmModel realm, UserModel user, CredentialInput passwd) {
-        List<CredentialModel> credentialModelList = session.userCredentialManager()
-                .getStoredCredentialsByType(realm, user, PasswordCredentialModel.TYPE);
+        Stream<CredentialModel> credentialModelListStream = session.userCredentialManager()
+                .getStoredCredentialsByTypeStream(realm, user, PasswordCredentialModel.TYPE);
+
         //获取UCenter用户
         String uidStr = user.getFirstAttribute("ucenter-uid");
         UserData ucenterUser;
@@ -140,17 +147,22 @@ public class UCenterFederationProvider implements UserStorageProvider,
 
         if(fullSync){
             if(ucenterUser.validatePassword(passwd.getChallengeResponse())){
-                PasswordCredentialModel storedPassword =
-                        PasswordCredentialModel.createFromCredentialModel(credentialModelList.get(0));
-                PasswordHashProvider hash = session.getProvider(PasswordHashProvider.class,
-                        storedPassword.getPasswordCredentialData().getAlgorithm());
-                if (hash != null && !hash.verify(passwd.getChallengeResponse(), storedPassword)){
-                    session.userCredentialManager().updateCredential(realm, user, passwd); //更新储存的密码
+                if (credentialModelListStream != null) {
+                    Optional<CredentialModel> storedPasswordOptional = credentialModelListStream.findFirst();
+                    if(storedPasswordOptional.isPresent()) {
+                        PasswordCredentialModel storedPassword = PasswordCredentialModel
+                                .createFromCredentialModel(storedPasswordOptional.get());
+                        PasswordHashProvider hash = session.getProvider(PasswordHashProvider.class,
+                                storedPassword.getPasswordCredentialData().getAlgorithm());
+                        if (hash != null && !hash.verify(passwd.getChallengeResponse(), storedPassword)) {
+                            session.userCredentialManager().updateCredential(realm, user, passwd); //更新储存的密码
+                        }
+                    }
                 }
                 return true;
             }
         } else {
-            if (credentialModelList != null && !credentialModelList.isEmpty()) { //使用本地账号验证
+            if (credentialModelListStream != null && credentialModelListStream.count() > 0) { //使用本地账号验证
                 return false;
             }
             if(ucenterUser.validatePassword(passwd.getChallengeResponse())){
@@ -178,22 +190,20 @@ public class UCenterFederationProvider implements UserStorageProvider,
             String salt = UCenterUtils.makeSalt();
             String passwordHash = UCenterUtils.makeHash(input.getChallengeResponse(), salt);
 
-            Connection dbw = null;
+            //Connection connection = getConnection();
             PreparedStatement stmt = null;
             String table;
 
+            boolean result = false;
             try	{
-                InitialContext ctx = new InitialContext();
-                DataSource ds = (DataSource) ctx.lookup(config.getDataSourceName());
                 table = config.getTable("members");
-                dbw = ds.getConnection();
-                stmt = dbw.prepareStatement("update `" + table + "` set `password`=?, `salt`=? where `uid`=?");
+                stmt = dbConnection.prepareStatement("update `" + table + "` set `password`=?, `salt`=? where `uid`=?");
 
                 stmt.setString(1, passwordHash);
                 stmt.setString(2, salt);
                 stmt.setInt(3, Integer.parseInt(uidStr));
 
-                return stmt.execute();
+                result = stmt.execute();
             } catch(Exception e) {
                 logger.error("Failed to update user password at UCenter", e);
             } finally {
@@ -201,13 +211,14 @@ public class UCenterFederationProvider implements UserStorageProvider,
                     if(stmt != null) {
                         stmt.close();
                     }
-                    if(dbw != null) {
-                        dbw.close();
-                    }
+                    /*if(connection != null){
+                        connection.close();
+                    }*/
                 } catch(Exception ignored) {
 
                 }
             }
+            return result;
         }
         return false;
     }
@@ -248,6 +259,10 @@ public class UCenterFederationProvider implements UserStorageProvider,
 
     @Override
     public void close() {
+        try {
+            dbConnection.close();
+        } catch (SQLException ignored) {
 
+        }
     }
 }

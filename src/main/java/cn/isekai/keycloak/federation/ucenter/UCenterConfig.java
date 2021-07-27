@@ -9,7 +9,9 @@ public class UCenterConfig {
     private static final Logger logger = Logger.getLogger(UCenterFederationProvider.class);
     protected MultivaluedHashMap<String, String> config;
 
-    public String datasourceName;
+    public String jdbcUrl;
+    public String dbUser;
+    public String dbPass;
     public String tablePrefix;
     public boolean fullSync;
 
@@ -28,18 +30,27 @@ public class UCenterConfig {
     }
 
     protected void initialize(){
-        this.datasourceName = config.getFirst("datasource-name");
+        this.jdbcUrl = config.getFirst("jdbc-url");
+        this.dbUser = config.getFirst("db-user");
+        this.dbPass = config.getFirst("db-pass");
         this.tablePrefix = config.getFirst("table-prefix");
         this.fullSync = Boolean.parseBoolean(config.getFirst("full-sync"));
-        logger.info("Full sync: " + config.getFirst("full-sync"));
     }
 
     /**
      * 获取DataSource名
      * @return DataSourceName
      */
-    public String getDataSourceName(){
-        return this.datasourceName;
+    public String getJdbcUrl(){
+        return this.jdbcUrl;
+    }
+
+    public String getDbUser(){
+        return this.dbUser;
+    }
+
+    public String getDbPass(){
+        return this.dbPass;
     }
 
     /**

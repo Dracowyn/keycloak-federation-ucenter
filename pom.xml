@@ -5,15 +5,16 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>cn.isekai</groupId>
-    <artifactId>keycloak-federation-ucenter</artifactId>
-    <version>1.1</version>
+    <artifactId>keycloak-x-federation-ucenter</artifactId>
+    <version>1.2</version>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <version.keycloak>9.0.2</version.keycloak>
+        <version.keycloak>14.0.0</version.keycloak>
+        <quarkus.agoral.version>1.13.3.Final</quarkus.agoral.version>
         <jboss.logging.version>3.3.2.Final</jboss.logging.version>
     </properties>
 
@@ -23,6 +24,12 @@
             <artifactId>jboss-logging</artifactId>
             <scope>provided</scope>
             <version>${jboss.logging.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-agroal</artifactId>
+            <scope>provided</scope>
+            <version>${quarkus.agoral.version}</version>
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
@@ -84,6 +91,19 @@
                             <descriptorRef>jar-with-dependencies</descriptorRef>
                         </descriptorRefs>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.jboss.jandex</groupId>
+                    <artifactId>jandex-maven-plugin</artifactId>
+                    <version>1.1.0</version>
+                    <executions>
+                        <execution>
+                            <id>make-index</id>
+                            <goals>
+                                <goal>jandex</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
