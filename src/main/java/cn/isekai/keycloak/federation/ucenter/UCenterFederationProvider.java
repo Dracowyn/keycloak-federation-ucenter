@@ -40,42 +40,42 @@ public class UCenterFederationProvider implements UserStorageProvider,
         this.dbConnection = getConnection();
     }
 
-    private Connection getConnection(){
+    private Connection getConnection() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             return DriverManager.getConnection(config.getJdbcUrl(), config.getDbUser(), config.getDbPass());
-        } catch (Exception e){
+        } catch (Exception e) {
             logger.error("Cannot connect to UCenter database", e);
         }
         return null;
     }
 
-    public UserData getUser(String findBy, String condition, RealmModel realm){
+    public UserData getUser(String findBy, String condition, RealmModel realm) {
         return getUser(findBy, condition, String.class, realm);
     }
 
-    public UserData getUser(String findBy, int condition, RealmModel realm){
+    public UserData getUser(String findBy, int condition, RealmModel realm) {
         return getUser(findBy, condition, Integer.class, realm);
     }
 
-    public UserData getUser(String findBy, Object condition, Class<?> conditionType, RealmModel realm){
+    public UserData getUser(String findBy, Object condition, Class<?> conditionType, RealmModel realm) {
         //Connection connection = getConnection();
         PreparedStatement stmt = null;
         UserData userData = null;
         String table;
 
-        try	{
+        try {
             table = config.getTable("members");
             stmt = dbConnection.prepareStatement("select * from `" + table + "` where `" + findBy + "`=?");
 
-            if(conditionType.equals(String.class)){
+            if (conditionType.equals(String.class)) {
                 stmt.setString(1, (String) condition);
-            } else if(conditionType.equals(Integer.class)){
+            } else if (conditionType.equals(Integer.class)) {
                 stmt.setInt(1, (int) condition);
             }
 
             ResultSet rs = stmt.executeQuery();
-            if(rs.next()){
+            if (rs.next()) {
                 //找到用户
                 userData = new UserData(this.session, realm, this.model);
                 userData.setUserId(rs.getString("uid"));
@@ -84,17 +84,17 @@ public class UCenterFederationProvider implements UserStorageProvider,
                 userData.setPasswordHash(rs.getString("password"), rs.getString("salt"));
                 userData.setCreatedTimestamp(rs.getLong("regdate") * 1000);
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             logger.error("Find UCenter User Error", e);
         } finally {
             try {
-                if(stmt != null) {
+                if (stmt != null) {
                     stmt.close();
                 }
                 /*if(connection != null){
                     connection.close();
                 }*/
-            } catch(Exception ignored) {
+            } catch (Exception ignored) {
 
             }
         }
@@ -102,9 +102,9 @@ public class UCenterFederationProvider implements UserStorageProvider,
     }
 
     @Override
-    public UserModel getUserByUsername(RealmModel realm,String username) {
+    public UserModel getUserByUsername(RealmModel realm, String username) {
         UserData userData = this.getUser("username", username, realm);
-        if(userData == null){
+        if (userData == null) {
             logger.info("Cannot find user from UCenter Database by username: " + username);
             return null;
         }
@@ -112,9 +112,9 @@ public class UCenterFederationProvider implements UserStorageProvider,
     }
 
     @Override
-    public UserModel getUserByEmail( RealmModel realm,String email) {
+    public UserModel getUserByEmail(RealmModel realm, String email) {
         UserData userData = this.getUser("email", email, realm);
-        if(userData == null){
+        if (userData == null) {
             logger.info("Cannot find user from UCenter Database by email: " + email);
             return null;
         }
@@ -122,7 +122,7 @@ public class UCenterFederationProvider implements UserStorageProvider,
     }
 
     @Override
-    public UserModel getUserById(RealmModel realm,String id) {
+    public UserModel getUserById(RealmModel realm, String id) {
         return null;
     }
 
@@ -134,21 +134,23 @@ public class UCenterFederationProvider implements UserStorageProvider,
         //获取UCenter用户
         String uidStr = user.getFirstAttribute("ucenter-uid");
         UserData ucenterUser;
-        if(uidStr != null){
+        if (uidStr != null) {
             ucenterUser = getUser("uid", Integer.parseInt(uidStr), realm);
         } else {
             ucenterUser = getUser("username", user.getUsername(), realm);
         }
 
-        if(ucenterUser == null) return false;
+        if (ucenterUser == null) {
+            return false;
+        }
 
         boolean fullSync = this.config.getFullSyncEnabled();
 
-        if(fullSync){
-            if(ucenterUser.validatePassword(passwd.getChallengeResponse())){
+        if (fullSync) {
+            if (ucenterUser.validatePassword(passwd.getChallengeResponse())) {
                 if (credentialModelListStream != null) {
                     Optional<CredentialModel> storedPasswordOptional = credentialModelListStream.findFirst();
-                    if(storedPasswordOptional.isPresent()) {
+                    if (storedPasswordOptional.isPresent()) {
                         PasswordCredentialModel storedPassword = PasswordCredentialModel
                                 .createFromCredentialModel(storedPasswordOptional.get());
                         PasswordHashProvider hash = session.getProvider(PasswordHashProvider.class,
@@ -164,8 +166,9 @@ public class UCenterFederationProvider implements UserStorageProvider,
             if (credentialModelListStream != null && credentialModelListStream.findAny().isPresent()) { //使用本地账号验证
                 return false;
             }
-            if(ucenterUser.validatePassword(passwd.getChallengeResponse())){
-                user.credentialManager().updateCredential(passwd); //更新储存的密码
+            if (ucenterUser.validatePassword(passwd.getChallengeResponse())) {
+                //更新储存的密码
+                user.credentialManager().updateCredential(passwd);
                 return true;
             }
         }
@@ -174,17 +177,21 @@ public class UCenterFederationProvider implements UserStorageProvider,
 
     /**
      * 更新UCenter密码
+     *
      * @param realm RealmModel
-     * @param user UserModel
+     * @param user  UserModel
      * @param input CredentialInput
      * @return boolean
      */
     @Override
+    //完全同步模式，更改ucenter中的用户密码
     public boolean updateCredential(RealmModel realm, UserModel user, CredentialInput input) {
-        if(input.getType().equals(PasswordCredentialModel.TYPE) && user.getFederationLink().equals(this.model.getId()) &&
-                this.config.getFullSyncEnabled()){ //完全同步模式，更改ucenter中的用户密码
+        if (input.getType().equals(PasswordCredentialModel.TYPE) && user.getFederationLink().equals(this.model.getId()) &&
+                this.config.getFullSyncEnabled()) {
             String uidStr = user.getFirstAttribute("ucenter-uid");
-            if(uidStr == null) return false;
+            if (uidStr == null) {
+                return false;
+            }
 
             String salt = UCenterUtils.makeSalt();
             String passwordHash = UCenterUtils.makeHash(input.getChallengeResponse(), salt);
@@ -194,7 +201,7 @@ public class UCenterFederationProvider implements UserStorageProvider,
             String table;
 
             boolean result = false;
-            try	{
+            try {
                 table = config.getTable("members");
                 stmt = dbConnection.prepareStatement("update `" + table + "` set `password`=?, `salt`=? where `uid`=?");
 
@@ -203,17 +210,17 @@ public class UCenterFederationProvider implements UserStorageProvider,
                 stmt.setInt(3, Integer.parseInt(uidStr));
 
                 result = stmt.execute();
-            } catch(Exception e) {
+            } catch (Exception e) {
                 logger.error("Failed to update user password at UCenter", e);
             } finally {
                 try {
-                    if(stmt != null) {
+                    if (stmt != null) {
                         stmt.close();
                     }
                     /*if(connection != null){
                         connection.close();
                     }*/
-                } catch(Exception ignored) {
+                } catch (Exception ignored) {
 
                 }
             }
