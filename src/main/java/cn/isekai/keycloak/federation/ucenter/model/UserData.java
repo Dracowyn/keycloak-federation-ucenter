@@ -1,10 +1,5 @@
 package cn.isekai.keycloak.federation.ucenter.model;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
 import cn.isekai.keycloak.federation.ucenter.UCenterFederationProvider;
 import cn.isekai.keycloak.federation.ucenter.UCenterUtils;
 import org.jboss.logging.Logger;
@@ -12,8 +7,8 @@ import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
-import org.keycloak.models.utils.UserModelDelegate;
 import org.keycloak.storage.StorageId;
+import org.keycloak.storage.UserStoragePrivateUtil;
 import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
 
 public class UserData extends AbstractUserAdapterFederatedStorage  implements UserModel  {
@@ -31,7 +26,6 @@ public class UserData extends AbstractUserAdapterFederatedStorage  implements Us
 
     protected String userId, email, userName, passwordHash, salt;
     protected Long createdTime;
-    protected boolean enabled;
 
     public String getUserId() {
         return userId;
@@ -110,10 +104,10 @@ public class UserData extends AbstractUserAdapterFederatedStorage  implements Us
     }
 
     public UserModel getLocalUser(RealmModel realm){
-        UserModel localUser = session.userLocalStorage().getUserByUsername(this.getUsername(), realm);
+        UserModel localUser = UserStoragePrivateUtil.userLocalStorage(session).getUserByUsername(realm, this.getUsername());
         if(localUser == null) {
             logger.info("Local user not found, auto-create: " + this.getUsername());
-            localUser = session.userLocalStorage().addUser(realm, this.getUsername());
+            localUser = UserStoragePrivateUtil.userLocalStorage(session).addUser(realm, this.getUsername());
             localUser.setFederationLink(model.getId());
             localUser.setEmail(this.getEmail());
             localUser.setUsername(this.getUsername());

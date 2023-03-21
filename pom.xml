@@ -5,17 +5,17 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>cn.isekai</groupId>
-    <artifactId>keycloak-x-federation-ucenter</artifactId>
-    <version>1.2</version>
+    <artifactId>keycloak-federation-ucenter</artifactId>
+    <version>1.4</version>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <version.keycloak>14.0.0</version.keycloak>
-        <quarkus.agoral.version>1.13.3.Final</quarkus.agoral.version>
-        <jboss.logging.version>3.3.2.Final</jboss.logging.version>
+        <version.keycloak>21.0.1</version.keycloak>
+        <quarkus.agoral.version>2.7.5.Final</quarkus.agoral.version>
+        <jboss.logging.version>3.5.0.Final</jboss.logging.version>
     </properties>
 
     <dependencies>
@@ -64,7 +64,7 @@
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20190722</version>
+            <version>20230227</version>
         </dependency>
     </dependencies>
 

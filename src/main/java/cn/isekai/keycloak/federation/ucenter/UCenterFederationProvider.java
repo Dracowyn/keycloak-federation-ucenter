@@ -3,19 +3,18 @@ package cn.isekai.keycloak.federation.ucenter;
 import cn.isekai.keycloak.federation.ucenter.model.UserData;
 import org.jboss.logging.Logger;
 import org.keycloak.component.ComponentModel;
-import org.keycloak.credential.*;
+import org.keycloak.credential.CredentialInput;
+import org.keycloak.credential.CredentialInputUpdater;
+import org.keycloak.credential.CredentialInputValidator;
+import org.keycloak.credential.CredentialModel;
 import org.keycloak.credential.hash.PasswordHashProvider;
-import org.keycloak.models.GroupModel;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.RoleModel;
-import org.keycloak.models.UserModel;
+import org.keycloak.models.*;
 import org.keycloak.models.credential.PasswordCredentialModel;
 import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.user.UserLookupProvider;
 
 import java.sql.*;
-import java.util.*;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class UCenterFederationProvider implements UserStorageProvider,
@@ -59,7 +58,7 @@ public class UCenterFederationProvider implements UserStorageProvider,
         return getUser(findBy, condition, Integer.class, realm);
     }
 
-    public UserData getUser(String findBy, Object condition, Class conditionType, RealmModel realm){
+    public UserData getUser(String findBy, Object condition, Class<?> conditionType, RealmModel realm){
         //Connection connection = getConnection();
         PreparedStatement stmt = null;
         UserData userData = null;
@@ -103,7 +102,7 @@ public class UCenterFederationProvider implements UserStorageProvider,
     }
 
     @Override
-    public UserModel getUserByUsername(String username, RealmModel realm) {
+    public UserModel getUserByUsername(RealmModel realm,String username) {
         UserData userData = this.getUser("username", username, realm);
         if(userData == null){
             logger.info("Cannot find user from UCenter Database by username: " + username);
@@ -113,7 +112,7 @@ public class UCenterFederationProvider implements UserStorageProvider,
     }
 
     @Override
-    public UserModel getUserByEmail(String email, RealmModel realm) {
+    public UserModel getUserByEmail( RealmModel realm,String email) {
         UserData userData = this.getUser("email", email, realm);
         if(userData == null){
             logger.info("Cannot find user from UCenter Database by email: " + email);
@@ -123,14 +122,14 @@ public class UCenterFederationProvider implements UserStorageProvider,
     }
 
     @Override
-    public UserModel getUserById(String id, RealmModel realm) {
+    public UserModel getUserById(RealmModel realm,String id) {
         return null;
     }
 
     @Override
     public boolean isValid(RealmModel realm, UserModel user, CredentialInput passwd) {
-        Stream<CredentialModel> credentialModelListStream = session.userCredentialManager()
-                .getStoredCredentialsByTypeStream(realm, user, PasswordCredentialModel.TYPE);
+        Stream<CredentialModel> credentialModelListStream = user.credentialManager()
+                .getStoredCredentialsByTypeStream(PasswordCredentialModel.TYPE);
 
         //获取UCenter用户
         String uidStr = user.getFirstAttribute("ucenter-uid");
@@ -155,18 +154,18 @@ public class UCenterFederationProvider implements UserStorageProvider,
                         PasswordHashProvider hash = session.getProvider(PasswordHashProvider.class,
                                 storedPassword.getPasswordCredentialData().getAlgorithm());
                         if (hash != null && !hash.verify(passwd.getChallengeResponse(), storedPassword)) {
-                            session.userCredentialManager().updateCredential(realm, user, passwd); //更新储存的密码
+                            user.credentialManager().updateCredential(passwd); //更新储存的密码
                         }
                     }
                 }
                 return true;
             }
         } else {
-            if (credentialModelListStream != null && credentialModelListStream.count() > 0) { //使用本地账号验证
+            if (credentialModelListStream != null && credentialModelListStream.findAny().isPresent()) { //使用本地账号验证
                 return false;
             }
             if(ucenterUser.validatePassword(passwd.getChallengeResponse())){
-                session.userCredentialManager().updateCredential(realm, user, passwd); //更新储存的密码
+                user.credentialManager().updateCredential(passwd); //更新储存的密码
                 return true;
             }
         }
@@ -175,10 +174,10 @@ public class UCenterFederationProvider implements UserStorageProvider,
 
     /**
      * 更新UCenter密码
-     * @param realm
-     * @param user
-     * @param input
-     * @return
+     * @param realm RealmModel
+     * @param user UserModel
+     * @param input CredentialInput
+     * @return boolean
      */
     @Override
     public boolean updateCredential(RealmModel realm, UserModel user, CredentialInput input) {
@@ -253,8 +252,8 @@ public class UCenterFederationProvider implements UserStorageProvider,
     }
 
     @Override
-    public Set<String> getDisableableCredentialTypes(RealmModel realm, UserModel user) {
-        return Collections.EMPTY_SET;
+    public Stream<String> getDisableableCredentialTypesStream(RealmModel realm, UserModel user) {
+        return Stream.empty();
     }
 
     @Override
