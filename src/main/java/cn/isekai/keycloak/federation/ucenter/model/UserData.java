@@ -106,7 +106,7 @@ public class UserData extends AbstractUserAdapterFederatedStorage  implements Us
     public UserModel getLocalUser(RealmModel realm){
         UserModel localUser = UserStoragePrivateUtil.userLocalStorage(session).getUserByUsername(realm, this.getUsername());
         if(localUser == null) {
-            logger.info("Local user not found, auto-create: " + this.getUsername());
+            logger.info("Local user not found, auto create user form UCenter: " + this.getUsername());
             localUser = UserStoragePrivateUtil.userLocalStorage(session).addUser(realm, this.getUsername());
             localUser.setFederationLink(model.getId());
             localUser.setEmail(this.getEmail());

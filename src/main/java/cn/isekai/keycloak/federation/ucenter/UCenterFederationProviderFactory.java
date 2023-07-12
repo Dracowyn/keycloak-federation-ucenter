@@ -40,7 +40,7 @@ public class UCenterFederationProviderFactory implements UserStorageProviderFact
         return ProviderConfigurationBuilder.create()
                 .property().name("jdbc-url")
                 .label("JDBC URL")
-                .defaultValue("ucenter")
+                .defaultValue("UCenter")
                 .type(ProviderConfigProperty.STRING_TYPE)
                 .add()
                 .property().name("db-user")

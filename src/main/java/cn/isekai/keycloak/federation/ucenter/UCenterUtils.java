@@ -1,7 +1,5 @@
 package cn.isekai.keycloak.federation.ucenter;
 
-import cn.isekai.keycloak.federation.ucenter.model.UserData;
-
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

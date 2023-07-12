@@ -9,12 +9,12 @@
     <version>1.4</version>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <version.keycloak>21.0.1</version.keycloak>
-        <quarkus.agoral.version>2.7.5.Final</quarkus.agoral.version>
+        <version.keycloak>22.0.0</version.keycloak>
+        <quarkus.agoral.version>3.2.0.Final</quarkus.agoral.version>
         <jboss.logging.version>3.5.0.Final</jboss.logging.version>
     </properties>
 

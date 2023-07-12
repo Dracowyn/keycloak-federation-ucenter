@@ -45,7 +45,7 @@ public class UCenterFederationProvider implements UserStorageProvider,
             Class.forName("com.mysql.cj.jdbc.Driver");
             return DriverManager.getConnection(config.getJdbcUrl(), config.getDbUser(), config.getDbPass());
         } catch (Exception e) {
-            logger.error("Cannot connect to UCenter database", e);
+            logger.error("Can not connect to UCenter database", e);
         }
         return null;
     }
@@ -91,9 +91,6 @@ public class UCenterFederationProvider implements UserStorageProvider,
                 if (stmt != null) {
                     stmt.close();
                 }
-                /*if(connection != null){
-                    connection.close();
-                }*/
             } catch (Exception ignored) {
 
             }
@@ -196,7 +193,6 @@ public class UCenterFederationProvider implements UserStorageProvider,
             String salt = UCenterUtils.makeSalt();
             String passwordHash = UCenterUtils.makeHash(input.getChallengeResponse(), salt);
 
-            //Connection connection = getConnection();
             PreparedStatement stmt = null;
             String table;
 
@@ -217,9 +213,6 @@ public class UCenterFederationProvider implements UserStorageProvider,
                     if (stmt != null) {
                         stmt.close();
                     }
-                    /*if(connection != null){
-                        connection.close();
-                    }*/
                 } catch (Exception ignored) {
 
                 }
