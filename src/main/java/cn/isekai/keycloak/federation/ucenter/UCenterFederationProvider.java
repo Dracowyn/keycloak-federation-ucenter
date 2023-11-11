@@ -153,14 +153,16 @@ public class UCenterFederationProvider implements UserStorageProvider,
                         PasswordHashProvider hash = session.getProvider(PasswordHashProvider.class,
                                 storedPassword.getPasswordCredentialData().getAlgorithm());
                         if (hash != null && !hash.verify(passwd.getChallengeResponse(), storedPassword)) {
-                            user.credentialManager().updateCredential(passwd); //更新储存的密码
+                            //更新储存的密码
+                            user.credentialManager().updateCredential(passwd);
                         }
                     }
                 }
                 return true;
             }
         } else {
-            if (credentialModelListStream != null && credentialModelListStream.findAny().isPresent()) { //使用本地账号验证
+            //使用本地账号验证
+            if (credentialModelListStream != null && credentialModelListStream.findAny().isPresent()) {
                 return false;
             }
             if (ucenterUser.validatePassword(passwd.getChallengeResponse())) {
@@ -181,8 +183,8 @@ public class UCenterFederationProvider implements UserStorageProvider,
      * @return boolean
      */
     @Override
-    //完全同步模式，更改ucenter中的用户密码
     public boolean updateCredential(RealmModel realm, UserModel user, CredentialInput input) {
+        //完全同步模式，更改ucenter中的用户密码
         if (input.getType().equals(PasswordCredentialModel.TYPE) && user.getFederationLink().equals(this.model.getId()) &&
                 this.config.getFullSyncEnabled()) {
             String uidStr = user.getFirstAttribute("ucenter-uid");

@@ -30,10 +30,10 @@ public class UCenterFederationProviderFactory implements UserStorageProviderFact
         return "Migrate users from UCenter database";
     }
 
-    protected static final List<ProviderConfigProperty> configProperties;
+    protected static final List<ProviderConfigProperty> CONFIG_PROPERTIES;
 
     static {
-        configProperties = getConfigProps();
+        CONFIG_PROPERTIES = getConfigProps();
     }
 
     private static List<ProviderConfigProperty> getConfigProps() {
@@ -67,7 +67,7 @@ public class UCenterFederationProviderFactory implements UserStorageProviderFact
 
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
-        return configProperties;
+        return CONFIG_PROPERTIES;
     }
 
 

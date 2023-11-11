@@ -15,12 +15,12 @@ public class UCenterConfig {
     public String tablePrefix;
     public boolean fullSync;
 
-    public UCenterConfig(ComponentModel componentModel){
+    public UCenterConfig(ComponentModel componentModel) {
         this.config = componentModel.getConfig();
         this.initialize();
     }
 
-    public UCenterConfig(ComponentRepresentation componentRepresentation){
+    public UCenterConfig(ComponentRepresentation componentRepresentation) {
         this.config = componentRepresentation.getConfig();
         this.initialize();
     }
@@ -29,7 +29,7 @@ public class UCenterConfig {
         return config;
     }
 
-    protected void initialize(){
+    protected void initialize() {
         this.jdbcUrl = config.getFirst("jdbc-url");
         this.dbUser = config.getFirst("db-user");
         this.dbPass = config.getFirst("db-pass");
@@ -39,30 +39,33 @@ public class UCenterConfig {
 
     /**
      * 获取DataSource名
+     *
      * @return DataSourceName
      */
-    public String getJdbcUrl(){
+    public String getJdbcUrl() {
         return this.jdbcUrl;
     }
 
-    public String getDbUser(){
+    public String getDbUser() {
         return this.dbUser;
     }
 
-    public String getDbPass(){
+    public String getDbPass() {
         return this.dbPass;
     }
 
     /**
      * 获取表前缀
+     *
      * @return 表前缀
      */
-    public String getTablePrefix(){
+    public String getTablePrefix() {
         return this.tablePrefix;
     }
 
     /**
      * 获取完全同步模式的开启状态
+     *
      * @return 是否开启完全同步模式
      */
     public boolean getFullSyncEnabled() {
@@ -71,10 +74,11 @@ public class UCenterConfig {
 
     /**
      * 获取完整表名
+     *
      * @param tableName 原表名
      * @return 带前缀的表名
      */
-    public String getTable(String tableName){
+    public String getTable(String tableName) {
         return this.getTablePrefix() + tableName;
     }
 }

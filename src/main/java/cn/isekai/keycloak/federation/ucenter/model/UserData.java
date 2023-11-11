@@ -11,7 +11,7 @@ import org.keycloak.storage.StorageId;
 import org.keycloak.storage.UserStoragePrivateUtil;
 import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
 
-public class UserData extends AbstractUserAdapterFederatedStorage  implements UserModel  {
+public class UserData extends AbstractUserAdapterFederatedStorage implements UserModel {
     private static final Logger logger = Logger.getLogger(UCenterFederationProvider.class);
     private final ComponentModel model;
 
@@ -68,12 +68,12 @@ public class UserData extends AbstractUserAdapterFederatedStorage  implements Us
         this.userName = username;
     }
 
-    public void setPasswordHash(String passwordHash, String salt){
+    public void setPasswordHash(String passwordHash, String salt) {
         this.passwordHash = passwordHash;
         this.salt = salt;
     }
 
-    public boolean validatePassword(String password){
+    public boolean validatePassword(String password) {
         return UCenterUtils.validatePassword(password, this.passwordHash, this.salt);
     }
 
@@ -103,9 +103,9 @@ public class UserData extends AbstractUserAdapterFederatedStorage  implements Us
         this.email = email;
     }
 
-    public UserModel getLocalUser(RealmModel realm){
+    public UserModel getLocalUser(RealmModel realm) {
         UserModel localUser = UserStoragePrivateUtil.userLocalStorage(session).getUserByUsername(realm, this.getUsername());
-        if(localUser == null) {
+        if (localUser == null) {
             logger.info("Local user not found, auto create user form UCenter: " + this.getUsername());
             localUser = UserStoragePrivateUtil.userLocalStorage(session).addUser(realm, this.getUsername());
             localUser.setFederationLink(model.getId());
