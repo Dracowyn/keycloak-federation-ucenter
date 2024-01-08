@@ -14,6 +14,7 @@ public class UCenterConfig {
     public String dbPass;
     public String tablePrefix;
     public boolean fullSync;
+    public boolean ucenter170;
 
     public UCenterConfig(ComponentModel componentModel) {
         this.config = componentModel.getConfig();
@@ -35,6 +36,7 @@ public class UCenterConfig {
         this.dbPass = config.getFirst("db-pass");
         this.tablePrefix = config.getFirst("table-prefix");
         this.fullSync = Boolean.parseBoolean(config.getFirst("full-sync"));
+        this.ucenter170 = Boolean.parseBoolean(config.getFirst("ucenter-170"));
     }
 
     /**
