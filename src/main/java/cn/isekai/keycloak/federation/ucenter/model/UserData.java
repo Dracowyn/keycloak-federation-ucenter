@@ -74,7 +74,12 @@ public class UserData extends AbstractUserAdapterFederatedStorage implements Use
     }
 
     public boolean validatePassword(String password) {
-        return UCenterUtils.validatePassword(password, this.passwordHash, this.salt);
+        // 如果salt为空则使用bcrypt验证
+        if (this.salt.isEmpty()) {
+            return UCenterUtils.validatePassword(password, this.passwordHash);
+        } else {
+            return UCenterUtils.validatePassword(password, this.passwordHash, this.salt);
+        }
     }
 
     @Override
@@ -103,6 +108,12 @@ public class UserData extends AbstractUserAdapterFederatedStorage implements Use
         this.email = email;
     }
 
+    /**
+     * 获取本地用户，如果不存在则自动创建
+     *
+     * @param realm RealmModel
+     * @return UserModel
+     */
     public UserModel getLocalUser(RealmModel realm) {
         UserModel localUser = UserStoragePrivateUtil.userLocalStorage(session).getUserByUsername(realm, this.getUsername());
         if (localUser == null) {
