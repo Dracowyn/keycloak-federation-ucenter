@@ -14,7 +14,6 @@ import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.user.UserLookupProvider;
 
 import java.sql.*;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 public class UCenterFederationProvider implements UserStorageProvider,
@@ -58,43 +57,48 @@ public class UCenterFederationProvider implements UserStorageProvider,
         return getUser(findBy, condition, Integer.class, realm);
     }
 
+    /**
+     * 根据条件获取UCenter用户
+     *
+     * @param findBy        username/email/uid
+     * @param condition     条件值
+     * @param conditionType 条件类型
+     * @param realm         RealmModel
+     * @return UserData
+     */
     public UserData getUser(String findBy, Object condition, Class<?> conditionType, RealmModel realm) {
-        //Connection connection = getConnection();
-        PreparedStatement stmt = null;
+        // 初始化返回值
         UserData userData = null;
-        String table;
 
         try {
-            table = config.getTable("members");
-            stmt = dbConnection.prepareStatement("select * from `" + table + "` where `" + findBy + "`=?");
+            // 获取表名
+            String table = config.getTable("members");
 
-            if (conditionType.equals(String.class)) {
-                stmt.setString(1, (String) condition);
-            } else if (conditionType.equals(Integer.class)) {
-                stmt.setInt(1, (int) condition);
-            }
+            try (var stmt = dbConnection.prepareStatement("SELECT * FROM `" + table + "` WHERE `" + findBy + "`=?")) {
+                // 根据条件类型设置查询参数
+                if (conditionType.equals(String.class)) {
+                    stmt.setString(1, (String) condition);
+                } else if (conditionType.equals(Integer.class)) {
+                    stmt.setInt(1, (Integer) condition);
+                }
 
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                //找到用户
-                userData = new UserData(this.session, realm, this.model);
-                userData.setUserId(rs.getString("uid"));
-                userData.setEmail(rs.getString("email"));
-                userData.setUsername(rs.getString("username"));
-                userData.setPasswordHash(rs.getString("password"), rs.getString("salt"));
-                userData.setCreatedTimestamp(rs.getLong("regdate") * 1000);
+                // 执行查询并处理结果集
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        // 找到用户
+                        userData = new UserData(this.session, realm, this.model);
+                        userData.setUserId(rs.getString("uid"));
+                        userData.setEmail(rs.getString("email"));
+                        userData.setUsername(rs.getString("username"));
+                        userData.setPasswordHash(rs.getString("password"), rs.getString("salt"));
+                        userData.setCreatedTimestamp(rs.getLong("regdate") * 1000);
+                    }
+                }
             }
         } catch (Exception e) {
             logger.error("Find UCenter User Error", e);
-        } finally {
-            try {
-                if (stmt != null) {
-                    stmt.close();
-                }
-            } catch (Exception ignored) {
-
-            }
         }
+
         return userData;
     }
 
@@ -123,12 +127,21 @@ public class UCenterFederationProvider implements UserStorageProvider,
         return null;
     }
 
+    /**
+     * 验证密码方法，当启用完全同步模式时，如果本地存储的密码和UCenter用户的密码不匹配，更新本地存储的密码
+     * 当禁用完全同步模式时，只有当没有本地账户时才使用UCenter用户验证
+     *
+     * @param realm  RealmModel
+     * @param user   UserModel
+     * @param passwd CredentialInput
+     * @return boolean
+     */
     @Override
     public boolean isValid(RealmModel realm, UserModel user, CredentialInput passwd) {
+        // 从存储的凭据中获取密码凭据流
         Stream<CredentialModel> credentialModelListStream = user.credentialManager()
                 .getStoredCredentialsByTypeStream(PasswordCredentialModel.TYPE);
-
-        //获取UCenter用户
+        // 根据用户属性获取UCenter用户
         String uidStr = user.getFirstAttribute("ucenter-uid");
         UserData ucenterUser;
         if (uidStr != null) {
@@ -137,36 +150,33 @@ public class UCenterFederationProvider implements UserStorageProvider,
             ucenterUser = getUser("username", user.getUsername(), realm);
         }
 
+        // 如果UCenter用户不存在，验证失败
         if (ucenterUser == null) {
             return false;
         }
-
+        // 查看配置是否启用完全同步模式
         boolean fullSync = this.config.getFullSyncEnabled();
-
         if (fullSync) {
+            // 当完全同步模式启用时，如果UCenter用户密码验证成功
             if (ucenterUser.validatePassword(passwd.getChallengeResponse())) {
-                if (credentialModelListStream != null) {
-                    Optional<CredentialModel> storedPasswordOptional = credentialModelListStream.findFirst();
-                    if (storedPasswordOptional.isPresent()) {
-                        PasswordCredentialModel storedPassword = PasswordCredentialModel
-                                .createFromCredentialModel(storedPasswordOptional.get());
-                        PasswordHashProvider hash = session.getProvider(PasswordHashProvider.class,
-                                storedPassword.getPasswordCredentialData().getAlgorithm());
-                        if (hash != null && !hash.verify(passwd.getChallengeResponse(), storedPassword)) {
-                            //更新储存的密码
-                            user.credentialManager().updateCredential(passwd);
-                        }
+                // 验证存储的密码并在需要时更新
+                credentialModelListStream.findFirst().ifPresent(credentialModel -> {
+                    PasswordCredentialModel storedPassword = PasswordCredentialModel
+                            .createFromCredentialModel(credentialModel);
+                    PasswordHashProvider hash = session.getProvider(PasswordHashProvider.class,
+                            storedPassword.getPasswordCredentialData().getAlgorithm());
+                    if (hash != null && !hash.verify(passwd.getChallengeResponse(), storedPassword)) {
+                        // 如果本地存储的密码和UCenter用户的密码不匹配，更新本地存储的密码
+                        user.credentialManager().updateCredential(passwd);
                     }
-                }
+                });
                 return true;
             }
         } else {
-            //使用本地账号验证
-            if (credentialModelListStream != null && credentialModelListStream.findAny().isPresent()) {
-                return false;
-            }
-            if (ucenterUser.validatePassword(passwd.getChallengeResponse())) {
-                //更新储存的密码
+            // 当完全同步模式禁用时，只有当没有本地账户时才使用UCenter用户验证
+            if (credentialModelListStream.findAny().isEmpty() &&
+                    ucenterUser.validatePassword(passwd.getChallengeResponse())) {
+                // 如果UCenter用户密码验证成功，更新本地存储的密码
                 user.credentialManager().updateCredential(passwd);
                 return true;
             }
@@ -184,40 +194,39 @@ public class UCenterFederationProvider implements UserStorageProvider,
      */
     @Override
     public boolean updateCredential(RealmModel realm, UserModel user, CredentialInput input) {
-        //完全同步模式，更改ucenter中的用户密码
-        if (input.getType().equals(PasswordCredentialModel.TYPE) && user.getFederationLink().equals(this.model.getId()) &&
-                this.config.getFullSyncEnabled()) {
+        //如果输入类型为密码并且用户的联合链接等于此模型的ID，并且启用了完全同步则更改ucenter中的用户密码
+        if (PasswordCredentialModel.TYPE.equals(input.getType()) && this.model.getId().equals(user.getFederationLink())
+                && this.config.getFullSyncEnabled()) {
+
             String uidStr = user.getFirstAttribute("ucenter-uid");
             if (uidStr == null) {
                 return false;
             }
 
-            String salt = UCenterUtils.makeSalt();
-            String passwordHash = UCenterUtils.makeHash(input.getChallengeResponse(), salt);
-
-            PreparedStatement stmt = null;
-            String table;
+            //创建盐和密码哈希
+            // 如果是UCenter 1.7.0 及以上版本，使用bcrypt算法
+            String passwordHash;
+            String salt;
+            if (this.config.ucenter170) {
+                passwordHash = UCenterUtils.bcrypt(input.getChallengeResponse());
+                salt = null;
+            } else {
+                salt = UCenterUtils.makeSalt();
+                passwordHash = UCenterUtils.makeHash(input.getChallengeResponse(), salt);
+            }
 
             boolean result = false;
-            try {
-                table = config.getTable("members");
-                stmt = dbConnection.prepareStatement("update `" + table + "` set `password`=?, `salt`=? where `uid`=?");
+            try (var stmt = dbConnection.prepareStatement(
+                    "UPDATE `" + config.getTable("members") + "` SET `password`=?, `salt`=? WHERE `uid`=?")) {
 
                 stmt.setString(1, passwordHash);
                 stmt.setString(2, salt);
                 stmt.setInt(3, Integer.parseInt(uidStr));
 
                 result = stmt.execute();
+
             } catch (Exception e) {
                 logger.error("Failed to update user password at UCenter", e);
-            } finally {
-                try {
-                    if (stmt != null) {
-                        stmt.close();
-                    }
-                } catch (Exception ignored) {
-
-                }
             }
             return result;
         }
