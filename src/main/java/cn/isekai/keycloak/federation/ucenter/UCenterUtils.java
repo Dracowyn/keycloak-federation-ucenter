@@ -1,6 +1,5 @@
 package cn.isekai.keycloak.federation.ucenter;
 
-import cn.hutool.crypto.digest.BCrypt;
 import org.jboss.logging.Logger;
 
 import java.math.BigInteger;
