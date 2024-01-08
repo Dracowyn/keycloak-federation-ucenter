@@ -207,9 +207,9 @@ public class UCenterFederationProvider implements UserStorageProvider,
             // 如果是UCenter 1.7.0 及以上版本，使用bcrypt算法
             String passwordHash;
             String salt;
-            if (this.config.ucenter170) {
+            if (this.config.getUCenter170()) {
                 passwordHash = UCenterUtils.bcrypt(input.getChallengeResponse());
-                salt = null;
+                salt = "";
             } else {
                 salt = UCenterUtils.makeSalt();
                 passwordHash = UCenterUtils.makeHash(input.getChallengeResponse(), salt);
@@ -218,6 +218,7 @@ public class UCenterFederationProvider implements UserStorageProvider,
             boolean result = false;
             try (var stmt = dbConnection.prepareStatement(
                     "UPDATE `" + config.getTable("members") + "` SET `password`=?, `salt`=? WHERE `uid`=?")) {
+                logger.info("Update user password at UCenter: " + user.getUsername());
 
                 stmt.setString(1, passwordHash);
                 stmt.setString(2, salt);

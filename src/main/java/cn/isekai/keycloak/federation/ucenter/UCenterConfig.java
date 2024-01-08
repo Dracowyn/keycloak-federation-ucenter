@@ -83,4 +83,13 @@ public class UCenterConfig {
     public String getTable(String tableName) {
         return this.getTablePrefix() + tableName;
     }
+
+    /**
+     * 获取UCenter版本是否为1.7.0或以上
+     *
+     * @return 是否为1.7.0或以上
+     */
+    public boolean getUCenter170() {
+        return this.ucenter170;
+    }
 }
