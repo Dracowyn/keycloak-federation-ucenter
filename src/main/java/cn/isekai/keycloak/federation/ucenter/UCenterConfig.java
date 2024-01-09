@@ -89,7 +89,7 @@ public class UCenterConfig {
      *
      * @return 是否为1.7.0或以上
      */
-    public boolean getUCenter170() {
+    public boolean getUcenter170() {
         return this.ucenter170;
     }
 }

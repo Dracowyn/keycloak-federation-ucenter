@@ -207,7 +207,7 @@ public class UCenterFederationProvider implements UserStorageProvider,
             // 如果是UCenter 1.7.0 及以上版本，使用bcrypt算法
             String passwordHash;
             String salt;
-            if (this.config.getUCenter170()) {
+            if (this.config.getUcenter170()) {
                 passwordHash = UCenterUtils.bcrypt(input.getChallengeResponse());
                 salt = "";
             } else {

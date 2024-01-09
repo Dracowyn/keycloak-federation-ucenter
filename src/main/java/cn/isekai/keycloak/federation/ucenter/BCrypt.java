@@ -140,8 +140,8 @@ public class BCrypt {
     /**
      * Expanded Blowfish key
      */
-    private int[] P;
-    private int[] S;
+    private int[] p;
+    private int[] s;
 
     /**
      * Encode a byte array using bcrypt's slightly-modified base64 encoding scheme. Note that this is *not* compatible with the standard MIME-base64 encoding.
@@ -262,23 +262,23 @@ public class BCrypt {
     private void encipher(int[] lr, int off) {
         int i, n, l = lr[off], r = lr[off + 1];
 
-        l ^= P[0];
+        l ^= p[0];
         for (i = 0; i <= BLOWFISH_NUM_ROUNDS - 2; ) {
             // Feistel substitution on left word
-            n = S[(l >> 24) & 0xff];
-            n += S[0x100 | ((l >> 16) & 0xff)];
-            n ^= S[0x200 | ((l >> 8) & 0xff)];
-            n += S[0x300 | (l & 0xff)];
-            r ^= n ^ P[++i];
+            n = s[(l >> 24) & 0xff];
+            n += s[0x100 | ((l >> 16) & 0xff)];
+            n ^= s[0x200 | ((l >> 8) & 0xff)];
+            n += s[0x300 | (l & 0xff)];
+            r ^= n ^ p[++i];
 
             // Feistel substitution on right word
-            n = S[(r >> 24) & 0xff];
-            n += S[0x100 | ((r >> 16) & 0xff)];
-            n ^= S[0x200 | ((r >> 8) & 0xff)];
-            n += S[0x300 | (r & 0xff)];
-            l ^= n ^ P[++i];
+            n = s[(r >> 24) & 0xff];
+            n += s[0x100 | ((r >> 16) & 0xff)];
+            n ^= s[0x200 | ((r >> 8) & 0xff)];
+            n += s[0x300 | (r & 0xff)];
+            l ^= n ^ p[++i];
         }
-        lr[off] = r ^ P[BLOWFISH_NUM_ROUNDS + 1];
+        lr[off] = r ^ p[BLOWFISH_NUM_ROUNDS + 1];
         lr[off + 1] = l;
     }
 
@@ -307,8 +307,8 @@ public class BCrypt {
      * Initialise the Blowfish key schedule
      */
     private void initKey() {
-        P = P_ORIG.clone();
-        S = S_ORIG.clone();
+        p = P_ORIG.clone();
+        s = S_ORIG.clone();
     }
 
     /**
@@ -320,22 +320,22 @@ public class BCrypt {
         int i;
         int[] koffp = {0};
         int[] lr = {0, 0};
-        int plen = P.length, slen = S.length;
+        int plen = p.length, slen = s.length;
 
         for (i = 0; i < plen; i++) {
-            P[i] = P[i] ^ streamToWord(key, koffp);
+            p[i] = p[i] ^ streamToWord(key, koffp);
         }
 
         for (i = 0; i < plen; i += 2) {
             encipher(lr, 0);
-            P[i] = lr[0];
-            P[i + 1] = lr[1];
+            p[i] = lr[0];
+            p[i + 1] = lr[1];
         }
 
         for (i = 0; i < slen; i += 2) {
             encipher(lr, 0);
-            S[i] = lr[0];
-            S[i + 1] = lr[1];
+            s[i] = lr[0];
+            s[i + 1] = lr[1];
         }
     }
 
@@ -350,26 +350,26 @@ public class BCrypt {
         int[] koffp = {0};
         int[] doffp = {0};
         int[] lr = {0, 0};
-        int plen = P.length, slen = S.length;
+        int plen = p.length, slen = s.length;
 
         for (i = 0; i < plen; i++) {
-            P[i] = P[i] ^ streamToWord(key, koffp);
+            p[i] = p[i] ^ streamToWord(key, koffp);
         }
 
         for (i = 0; i < plen; i += 2) {
             lr[0] ^= streamToWord(data, doffp);
             lr[1] ^= streamToWord(data, doffp);
             encipher(lr, 0);
-            P[i] = lr[0];
-            P[i + 1] = lr[1];
+            p[i] = lr[0];
+            p[i + 1] = lr[1];
         }
 
         for (i = 0; i < slen; i += 2) {
             lr[0] ^= streamToWord(data, doffp);
             lr[1] ^= streamToWord(data, doffp);
             encipher(lr, 0);
-            S[i] = lr[0];
-            S[i + 1] = lr[1];
+            s[i] = lr[0];
+            s[i + 1] = lr[1];
         }
     }
 
