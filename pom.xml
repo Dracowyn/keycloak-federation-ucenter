@@ -6,16 +6,16 @@
 
     <groupId>cn.isekai</groupId>
     <artifactId>keycloak-federation-ucenter</artifactId>
-    <version>1.5.0</version>
+    <version>1.6.0</version>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <version.keycloak>23.0.3</version.keycloak>
-        <quarkus.agoral.version>3.2.5.Final</quarkus.agoral.version>
-        <jboss.logging.version>3.5.0.Final</jboss.logging.version>
+        <version.keycloak>23.0.4</version.keycloak>
+        <quarkus.agroal.version>3.2.9.Final</quarkus.agroal.version>
+        <jboss.logging.version>3.5.1.Final</jboss.logging.version>
     </properties>
 
     <dependencies>
@@ -29,7 +29,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-agroal</artifactId>
             <scope>provided</scope>
-            <version>${quarkus.agoral.version}</version>
+            <version>${quarkus.agroal.version}</version>
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
