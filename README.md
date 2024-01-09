@@ -9,7 +9,7 @@ Keycloak UCenter用户同步插件
 
 ## 运行环境
 - Java 17
-- Keycloak 23.x.x
+- Keycloak 23.x.x(理论上兼容17到最新版，但是只在23.x.x版本测试过)
 
 ## 打包方法
 执行```mvn package```即可打包，打包后的jar文件在target目录下。
