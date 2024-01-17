@@ -5,11 +5,17 @@ Keycloak UCenter用户同步插件
 - 可以将ucenter的用户异步迁移到keycloak（但是只会合并账号基础信息）
 - 只会在用户第一次使用Discuz原账号密码登录Keycloak时同步用户信息，后续不会再同步。
 - 只会迁移用户名、邮箱、密码以及用户UCenter-uid，其它信息不会迁移。
-- 兼容Discuz!X3.4（UCenter低于1.7.0）和Discuz!X3.5
+
+# 支持Discuz版本
+- Discuz X3.0-3.4
+- Discuz X3.5
+- UCenter 1.6
+- UCenter 1.7
 
 ## 运行环境
 - Java 17
 - Keycloak 23.x.x(理论上兼容17到最新版，但是只在23.x.x版本测试过)
+- 支持运行在PostgreSQL、MySQL、MariaDB、Oracle、SQL Server等数据库上
 
 ## 打包方法
 执行```mvn package```即可打包，打包后的jar文件在target目录下。
